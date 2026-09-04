@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>吴宇欣 · FDE 解决方案工程作品集</title>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "strict", flowchart: { htmlLabels: false } });
+</script>
+<style>
+  :root { --ink:#1e252e; --muted:#5e6570; --line:#dce0e8; --blue:#3a84ff; --bg:#f4f6f9; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "PingFang SC","Microsoft YaHei",sans-serif; color: var(--ink); background: var(--bg); line-height: 1.75; font-size: 16px; }
+  header { background: #1e252e; color: #fff; padding: 36px 20px 28px; }
+  header .wrap, nav .wrap, main { max-width: 840px; margin: 0 auto; }
+  header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 650; }
+  header p { margin: 0; color: rgba(255,255,255,.82); }
+  .meta { margin-top: 12px; font-size: 13px; color: rgba(255,255,255,.7); }
+  nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid var(--line); z-index: 2; }
+  nav .wrap { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 20px; font-size: 13px; }
+  nav a { color: #2d6ae8; text-decoration: none; }
+  main { padding: 28px 20px 72px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
+  h2 { font-size: 20px; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--blue); }
+  h3 { font-size: 17px; margin: 22px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 15px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f0f2f6; }
+  .call { background: #eef4ff; border-left: 4px solid var(--blue); padding: 10px 14px; margin: 0 0 16px; }
+  .case { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin: 0 0 16px; background: #fafbfc; }
+  pre.mermaid { background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; }
+  footer { max-width: 840px; margin: 0 auto; padding: 16px 20px 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>SRE巡检平台迭代项目</h1>
+    <p>蓝鲸主机巡检 SaaS · 解决方案工程 · 吴宇欣</p>
+    <div class="meta">对内业务方交付 · 部门内预发布</div>
+  </div>
+</header>
+<nav>
+  <div class="wrap">
+    <a href="#scope">需求与范围</a>
+    <a href="#integrate">集成交付</a>
+    <a href="#cases">排障案例</a>
+    <a href="#list">清单与边界</a>
+  </div>
+</nav>
+<main>
+<section id="scope">
+  <h2>需求澄清与范围</h2>
+  <p>业务方要把分散的资产查询、巡检编排、真实执行、权限隔离和异常初判，收成一条可在预发布演示的 SaaS 主路径。内部用户在有权范围内自己完成圈主机、配计划、跑检查、回看结果。称谓使用业务方、内部用户、导师、相关平台团队。</p>
+  <p>初始需求里有几处必须当场问清楚：</p>
+  <ul>
+    <li><strong>怎样才算「真的跑起来」。 </strong>原则已经写明：不能让用户填任意命令，不能把执行凭证放到浏览器。脚本由谁生成、失败如何展示、超时等待多久，需要在交付时写成明确的系统行为。</li>
+    <li><strong>权限做到哪一层。 </strong>跨业务看不见、不能执行，已经能满足多业务串权这条底线。主机级授权会显著增加回调与验收成本，本次做到业务级。</li>
+    <li><strong>AI 加在哪里。 </strong>导师只要求加入研判。场景、证据来源、模型能不能发起写操作，由本人决定：计划分析、执行总结、追问；证据先鉴权；智能体只读；人确认处置。</li>
+  </ul>
+  <p>交付拆成四段，因为后一段吃前一段的数据或边界：先有对象和缓存，才能生成可执行计划；先有真实执行结果，研判才有证据；先有业务隔离，研判才不会变成越权读数通道。</p>
+  <pre class="mermaid">
+flowchart LR
+  R1[资产与编排] --> R2[受控执行]
+  R2 --> R3[业务权限]
+  R3 --> R4[只读研判]
+</pre>
+  <table>
+    <tr><th>角色</th><th>在本项目中做什么</th></tr>
+    <tr><td>业务方 / 导师</td><td>提出阶段目标与底线；AI 只要求加入研判</td></tr>
+    <tr><td>本人</td><td>澄清范围、选定场景、实现 SaaS、注册应用、申请网关授权、创建智能体、预发布部署、联调走查</td></tr>
+    <tr><td>平台已有能力</td><td>配置平台、作业平台、权限中心、监控、智能体平台、PaaS</td></tr>
+    <tr><td>内部用户</td><td>运维与只读走查；除本人外约 3 人；测试集群 38 台主机</td></tr>
+  </table>
+  <div class="call">无外部客户项目、无生产采用数据。实现阶段使用编程助手起草，方案与边界由本人确认。</div>
+</section>
+
+<section id="integrate">
+  <h2>系统集成与技术交付</h2>
+  <p>工作方式是：先把范围写成可验收的主路径，再实现模型与接口，再接前端，再在平台上完成应用身份、网关、智能体，最后在预发布按角色走查。</p>
+  <pre class="mermaid">
+flowchart TB
+  SCOPE[范围清单] --> MODEL[对象模型与 API]
+  MODEL --> FE[前端主路径]
+  FE --> AUTH[应用注册 / 网关授权 / 智能体]
+  AUTH --> STAG[预发布走查]
+  STAG --> FIX[按现象改接入]
+</pre>
+  <table>
+    <tr><th>依赖</th><th>本系统做什么</th><th>交付边界</th></tr>
+    <tr><td>配置平台</td><td>查询主机并写入本地缓存，叠加标签与主机组</td><td>不修改资产权威数据</td></tr>
+    <tr><td>作业平台</td><td>后端按项类型生成脚本、提交、轮询、解析入库</td><td>不开放任意命令；凭证不进前端</td></tr>
+    <tr><td>权限中心</td><td>按业务校验；列表过滤；申请入口</td><td>前端按钮不能代替后端判定</td></tr>
+    <tr><td>智能体</td><td>对已鉴权证据做分析、总结、追问</td><td>不能执行计划、不能改配置</td></tr>
+    <tr><td>监控</td><td>请求带追踪头；健康接口做接入自检</td><td>不在对外材料写内部参数</td></tr>
+  </table>
+  <p>关键依赖：当前登录态、业务权限、该业务上的作业执行权限、智能体的应用身份。写操作在权限服务异常时拒绝。智能体失败时返回明确错误，页面不编造结论。定时巡检代码已实现，<strong>预发布运行证据待确认</strong>。</p>
+  <p>预发布已走通：查询、手动执行、运维角色、只读角色、计划分析、执行总结、追问。完全无业务权限账号未试。提示词注入的人工页面验收未做。</p>
+</section>
+
+<section id="cases">
+  <h2>三件已处理的现场问题（已脱敏）</h2>
+  <p>共同特点：平台文档、现网行为和本环境注入值需要同时核对。下面只写现象、影响、定位动作、改完之后如何验证。</p>
+
+  <div class="case">
+    <h3>1. 可观测看起来已经接入，监控里检索不到</h3>
+    <p><strong>现象：</strong>按指南打开了追踪、进程也起来了，用一次页面操作去监控里搜，什么都没有。</p>
+    <p><strong>影响：</strong>预发布排障时无法用一次点击对应到后端调用链，后续作业身份问题和智能体问题都会变成盲猜。</p>
+    <p><strong>定位：</strong>把「平台注入到容器里的变量名」和「开发框架实际读取的变量名」列成一张对照表。用健康接口打出：开关是否打开、采样是否开启、上报地址是否非空、服务名是否非空。发现过指南占位符被原样写进配置、两侧名字不一致、服务名为空导致上报无处归属。</p>
+    <p><strong>处理：</strong>在应用侧完成名称映射，补齐服务名，用自检字段确认上报条件满足后再去监控里搜。</p>
+    <p><strong>验证：</strong>健康自检显示接入条件满足，并且能用追踪头在监控里找到对应请求。</p>
+    <p><strong>以后接同类增强服务：</strong>验收的第一项就是注入名与读取名是否一致，服务名是否为空。</p>
+  </div>
+
+  <div class="case">
+    <h3>2. 作业接口可以调用，执行身份却对不上当前用户</h3>
+    <p><strong>现象：</strong>提交作业的接口返回成功或可解析的错误，目标机上却没有按「当前登录的业务运维」去跑，或者平台直接拒绝。</p>
+    <p><strong>影响：</strong>内部用户无法在自己的权限里完成一次真实巡检，主路径演示中断。</p>
+    <p><strong>定位：</strong>触发执行之后的轮询跑在 Celery 进程里。如果身份只从线程上下文「碰巧还有用户」去取，预发布请求里的登录态到不了 Worker。用户还需要对目标业务具备作业访问权限。</p>
+    <p><strong>处理：</strong>在触发路径上显式绑定当前登录用户，全程带着这份身份去提交和查询作业。脚本在后端生成，浏览器不传执行凭证、不传任意命令。</p>
+    <p><strong>验证：</strong>业务运维角色手动执行主路径可以走通，结果能入库。</p>
+    <p><strong>以后凡是出进程的执行：</strong>交付清单里单列「身份从哪来、凭证存在哪、超时之后状态是什么」。</p>
+  </div>
+
+  <div class="case">
+    <h3>3. 智能体调用成功，页面上却看不到分析正文</h3>
+    <p><strong>现象：</strong>网关返回成功，页面只显示一个成功状态字样，运维以为研判就是这一句话。</p>
+    <p><strong>影响：</strong>研判入口形同虚设，业务方会认为「AI 没接上」。</p>
+    <p><strong>定位：</strong>现网成功响应里，顶层状态字段是固定成功文案，分析正文在另外的字段。文档示例的字段布局与现网不一致。把状态字段填进页面，就会只看到成功字样。</p>
+    <p><strong>处理：</strong>按一条真实成功响应的结构取正文；失败与超时返回明确错误，不编造分析。仓库里有覆盖「不要把成功态当成回答」的测试代码，该项<strong>不作为本人已完成的单测验收</strong>。</p>
+    <p><strong>验证：</strong>计划分析、执行总结、追问在预发布可以看到带回计划标识、执行标识或主机标识的文字。</p>
+    <p><strong>以后对接智能体：</strong>先保存一条真实响应，再写解析字段。</p>
+  </div>
+</section>
+
+<section id="list">
+  <h2>交付结果与可复用清单</h2>
+  <table>
+    <tr><th>已交付</th><th>已验证</th><th>仍缺的证据</th></tr>
+    <tr><td>查询编排、手动执行、业务权限、只读 AI</td><td>测试集群 38 台；运维与只读；分析 / 总结 / 追问</td><td>正式上线、采用率、人效、评分</td></tr>
+    <tr><td>定时调度代码</td><td>—</td><td>预发布历史中的「定时」记录</td></tr>
+    <tr><td>注入隔离与只读工具面</td><td>—</td><td>人工在页面上做注入验收</td></tr>
+  </table>
+  <h3>对内走查清单（个人经验）</h3>
+  <table>
+    <tr><th>接入</th><th>权限</th><th>Agent</th><th>部署</th></tr>
+    <tr><td>资产只读查询 + 本地缓存策略写明</td><td>登录态由后端确定</td><td>先鉴权再组证据</td><td>应用注册与网关授权完成</td></tr>
+    <tr><td>执行封装，禁止任意命令</td><td>列表按有权业务过滤</td><td>只读，无写工具</td><td>智能体已创建，超时有值（默认 75 秒）</td></tr>
+    <tr><td>结果结构化，支持部分失败</td><td>写与执行在权限异常时拒绝</td><td>截断（约 600 字 / 异常 20 条 / 最近 10 次）、失败不编造</td><td>追踪头与健康自检可用</td></tr>
+    <tr><td>轮询约 20 分钟，任务约 25 分钟硬超时</td><td>申请入口给内部用户用过</td><td>人确认处置</td><td>预发布主路径按角色走查</td></tr>
+  </table>
+  <h3>若进入其他业务方的生产环境（尚未发生）</h3>
+  <ul>
+    <li>验收样本：权限矩阵、至少一次手动执行、AI 结论必须含可回点到原记录的标识、失败状态在页面上可见。</li>
+    <li>评测材料：脱敏样本、越权应被拒绝的请求、注入用例。扩大使用范围之前先具备这些材料。</li>
+    <li>采用怎么看：有权限的人是否完成一次执行和一次总结。</li>
+    <li>反馈：总结旁收集有用或没用；差评抽检原文。现场问题写回清单。不声称已经影响平台路线图。</li>
+  </ul>
+  <p>AI 只读，处置由人确认。除本人外约 3 名内部使用者属于验证范围。</p>
+</section>
+</main>
+<footer>吴宇欣 · FDE 解决方案工程作品集 · 打开本 HTML 即可阅读</footer>
+</body>
+</html>

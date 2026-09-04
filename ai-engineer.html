@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>吴宇欣 · AI 应用开发作品集</title>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "strict", flowchart: { htmlLabels: false } });
+</script>
+<style>
+  :root { --ink:#1e252e; --muted:#5e6570; --line:#dce0e8; --blue:#3a84ff; --bg:#f4f6f9; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "PingFang SC","Microsoft YaHei",sans-serif; color: var(--ink); background: var(--bg); line-height: 1.75; font-size: 16px; }
+  header { background: #1e252e; color: #fff; padding: 36px 20px 28px; }
+  header .wrap, nav .wrap, main { max-width: 840px; margin: 0 auto; }
+  header h1 { margin: 0 0 8px; font-size: 26px; font-weight: 650; }
+  header p { margin: 0; color: rgba(255,255,255,.82); }
+  .meta { margin-top: 12px; font-size: 13px; color: rgba(255,255,255,.7); }
+  nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid var(--line); z-index: 2; }
+  nav .wrap { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 20px; font-size: 13px; }
+  nav a { color: #2d6ae8; text-decoration: none; }
+  main { padding: 28px 20px 72px; background: #fff; box-shadow: 0 0 0 1px var(--line); }
+  h2 { font-size: 20px; margin: 36px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--blue); }
+  h3 { font-size: 17px; margin: 22px 0 8px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 1.3em; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 16px; font-size: 15px; }
+  th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f0f2f6; }
+  .call { background: #eef4ff; border-left: 4px solid var(--blue); padding: 10px 14px; margin: 0 0 16px; }
+  pre.mermaid { background: #fafbfc; border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto; }
+  code { font-family: Consolas, monospace; font-size: 14px; background: #f0f2f6; padding: 1px 5px; }
+  pre.code { background: #1e252e; color: #e6e9ee; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+  footer { max-width: 840px; margin: 0 auto; padding: 16px 20px 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>SRE巡检平台迭代项目</h1>
+    <p>蓝鲸主机巡检 SaaS · AI 应用开发 · 吴宇欣</p>
+    <div class="meta">只读研判 · 人确认处置 · 部门内预发布已走通主路径</div>
+  </div>
+</header>
+<nav>
+  <div class="wrap">
+    <a href="#goal">目标与职责</a>
+    <a href="#arch">架构</a>
+    <a href="#objects">对象与快照</a>
+    <a href="#exec">执行与状态</a>
+    <a href="#agent">Agent</a>
+    <a href="#ops">部署与排障</a>
+    <a href="#next">后续</a>
+  </div>
+</nav>
+<main>
+<section id="goal">
+  <h2>业务问题与系统目标</h2>
+  <p>主机权威数据在配置平台，作业下发在作业平台，巡检「查谁、查什么、何时查」原先散落在表格和个人习惯里。计划配完经常无法在目标机上真正跑起来；多个业务共用一套登录入口时，A 业务的人可以看到或操作 B 业务的对象；执行明细入库之后，仍然要逐台、逐项点开才能形成初判。</p>
+  <p>系统目标是在现有蓝鲸能力之上交付一台可在预发布演示的巡检 SaaS：业务运维在自己的权限范围内圈定主机、编排方案与计划、经作业平台真实执行、结果结构化入库，并在已有证据上做只读归纳。智能体不能改配置、不能触发执行，处置由人确认。</p>
+  <p>导师只提出「加入 AI 研判」。加在哪个界面、证据从哪里取、模型能不能写操作，全部由本人决定。本人完成场景选择、方案取舍、应用注册、网关授权、智能体创建、预发布部署，以及 Django / DRF / Celery / Vue 3 主路径实现与联调。实现阶段使用编程助手起草代码，对象模型、鉴权边界和 AI 边界由本人确认。</p>
+  <p>配置平台、作业平台、权限中心、监控、智能体平台、PaaS 与开发框架是已有能力，本人在其上做 SaaS 侧模型、接口、异步任务、前端主路径和接入联调。</p>
+  <div class="call">验证范围：有权限的测试集群 38 台主机；系统尚未正式上线；除本人外约 3 名内部使用者走过主路径。这是验证范围。</div>
+  <h3>本人负责的模块</h3>
+  <ul>
+    <li>对象：查询即缓存、标签、主机组、方案、计划、执行记录。</li>
+    <li>执行：按巡检项类型在后端生成脚本、提交作业、Celery 轮询、结构化等级入库。</li>
+    <li>权限：按业务隔离读写与执行；权限服务异常时写与执行拒绝。</li>
+    <li>AI：计划分析、执行总结、基于上次结论的追问；证据先鉴权再送模型。</li>
+    <li>接入：应用注册、网关授权、智能体创建、预发布部署、请求追踪头。</li>
+  </ul>
+</section>
+
+<section id="arch">
+  <h2>集成关系与端到端链路</h2>
+  <p>浏览器里的 Vue 3 页面只负责选择业务、编排对象、展示历史和发起只读分析。真正的脚本内容、作业凭证、鉴权判定、证据打包都在 Django 后端完成。Celery 负责作业状态轮询和主机缓存同步，避免 HTTP 请求一直占着。</p>
+  <pre class="mermaid">
+flowchart TB
+  U[业务运维 / 只读用户] --> FE[Vue 3 前端]
+  FE --> API[Django + DRF]
+  API --> IAM[权限中心]
+  API --> CMDB[配置平台]
+  API --> JOB[作业平台]
+  API --> CEL[Celery 轮询与同步]
+  API --> AGENT[智能体 只读]
+  FE --> TRACE[追踪头]
+  API --> TRACE
+</pre>
+  <p>一次完整手动巡检按下面顺序发生：</p>
+  <ol>
+    <li>用户选择有权业务，查询主机。查询结果写入本地缓存，后续编排使用缓存对象，后台仍会定时全量同步配置平台。</li>
+    <li>用户用标签、主机组或筛选条件圈定「查谁」，用方案圈定「查什么」（巡检项与阈值）。创建计划时把方案打成快照。</li>
+    <li>用户触发执行。后端解析目标主机，按项类型生成脚本，带着当前登录身份提交作业平台。前端不传任意命令，不传执行凭证。</li>
+    <li>接口立即返回执行单。Celery 轮询作业状态与日志，解析约定前缀行，按阈值写入正常 / 预警 / 严重 / 出错。</li>
+    <li>部分主机失败时整次记为部分失败，已经成功的项照常展示。</li>
+    <li>用户在计划页做分析，或在历史页做该次总结，或在浮窗里基于上次结论继续追问。模型返回带计划标识、执行标识、主机标识的文字。人决定要不要改阈值、重跑或去作业平台处理。</li>
+  </ol>
+</section>
+
+<section id="objects">
+  <h2>对象模型：查询即缓存、方案快照、目标弱引用</h2>
+  <p>配置平台是主机权威来源。SaaS 每次查询都把结果写入本地，是为了让标签、主机组、方案、计划可以稳定引用同一套主机主键，避免编排过程中反复打配置平台、也避免计划保存时主机列表漂移到未知状态。缓存会过期、也会被定时任务全量刷新。</p>
+  <p>「查什么」和「查谁」拆开存储。创建计划时，方案（巡检项、阈值、脚本类型）做深拷贝，成为该计划自己的快照。之后有人改方案模板，已有计划仍按快照执行。要把计划改成新模板，必须走显式「同步方案」。这样做的目的：历史执行始终对应当时那套检查项，回看时能解释「那一次到底查了什么」。</p>
+  <p>「查谁」保存组、标签或筛选条件，执行当下再解析成主机列表。组成员变化、标签调整之后，下一次执行会带上新成员。快照锁住检查内容，弱引用跟随资产变化，两件事同时成立。</p>
+  <pre class="mermaid">
+flowchart LR
+  SUITE[方案模板] -->|创建计划时深拷贝| SNAP[方案快照 查什么]
+  GRP[主机组 / 标签 / 筛选] -->|执行时解析| HOSTS[主机列表 查谁]
+  SNAP --> PLAN[巡检计划]
+  HOSTS --> PLAN
+  PLAN --> RUN[执行单]
+</pre>
+</section>
+
+<section id="exec">
+  <h2>受控脚本、异步轮询、状态与超时</h2>
+  <p>脚本由后端按巡检项类型拼接固定模板。用户在页面上选「磁盘使用率」「进程存活」这类项，并填写阈值，不能贴一段任意 Shell。作业平台所需的执行身份留在服务端，浏览器拿不到。输出里只有带约定前缀的行会进入结构化解析，其余日志丢弃，减少把无关输出当成指标。</p>
+  <p>触发执行的 HTTP 接口只做：鉴权、解析目标、提交作业、写入执行单（状态为等待或执行中）。轮询放在 Celery。轮询上限大约 20 分钟，到期把执行单标为超时。Worker 任务硬超时大约 25 分钟，避免进程一直占着。定时巡检在代码里已用调度扫描启用了 Cron 的计划并写成「定时」触发类型；<strong>预发布运行证据待确认</strong>，此处不写成已经在预发布跑通过。</p>
+  <pre class="mermaid">
+stateDiagram-v2
+  [*] --> 等待
+  等待 --> 执行中
+  执行中 --> 成功
+  执行中 --> 部分失败
+  执行中 --> 失败
+  执行中 --> 超时
+  成功 --> [*]
+  部分失败 --> [*]
+  失败 --> [*]
+  超时 --> [*]
+</pre>
+  <p>终态可以按权限回看和重跑。单条结果另有等级：正常、预警、严重、出错。部分失败表示至少一台主机或一项检查没有成功，其余成功项仍然可读。</p>
+  <h3>接口与模型示意（脱敏路径）</h3>
+  <pre class="code">POST  /api/.../runs                 提交执行 { plan }
+GET   /api/.../runs/{id}            查询执行单与结果
+POST  /api/.../plans/{id}/ai-analysis
+POST  /api/.../runs/{id}/ai-summary
+POST  /api/.../ai/chat              { message, history }
+
+Plan        方案快照 + 目标范围
+Run         status, trigger, job_ref
+RunResult   host, item, level, excerpt</pre>
+  <p>调用方身份由后端登录态确定。列表接口按有权业务过滤。前端隐藏按钮不能代替后端鉴权：无权限的写与执行返回拒绝，并给出申请入口（运维角色与只读角色均已由本人走通并申请过权限）。完全没有业务权限的账号路径尚未试过。</p>
+</section>
+
+<section id="agent">
+  <h2>Agent：三个入口、数据流、边界</h2>
+  <p>导师要求加入研判。本人把研判放在已经有真实执行数据、并且已经有业务鉴权的位置，做成三个只读入口：</p>
+  <table>
+    <tr><th>入口</th><th>用户在做什么</th><th>送进模型的证据</th><th>期望产出</th></tr>
+    <tr><td>计划分析</td><td>在计划列表理解「这计划最近怎么样」</td><td>计划状态、范围、快照项与阈值、最近最多 10 次执行摘要</td><td>趋势与风险文字，带计划标识</td></tr>
+    <tr><td>执行总结</td><td>在一次执行历史上快速读懂该次</td><td>该次状态、主机影响、等级统计、异常最多 20 条、单段约 600 字</td><td>该次结论，带执行标识与主机标识</td></tr>
+    <tr><td>追问</td><td>在浮窗里基于上次结论继续问</td><td>上次结论 + 用户问题；仍受同一对象权限约束</td><td>补充解释；没有开放写工具</td></tr>
+  </table>
+  <pre class="mermaid">
+flowchart LR
+  CLICK[用户点击分析或总结] --> AUTH[对该计划或执行做对象级鉴权]
+  AUTH --> PACK[截断、脱敏、打包]
+  PACK --> LLM[智能体]
+  LLM --> SHOW[页面展示带回标识的文字]
+  SHOW --> HUMAN[人核对后决定处置]
+</pre>
+  <h3>安全与失败行为</h3>
+  <ul>
+    <li>证据只取当前用户已经有权看见的计划、执行和结果。不可信日志加边界后再进提示词。</li>
+    <li>口令、票据一类样式在送模型前替换。作品集不展示真实脱敏样例。</li>
+    <li>智能体侧没有 SQL、没有 Shell、没有作业提交工具。不能执行计划、不能同步方案、不能改阈值。</li>
+    <li>证据不够时，回复必须说明证据不够。智能体未配置、网关失败、超时（对话默认 75 秒）返回明确错误，页面不伪造一段「看起来像分析」的文字。</li>
+    <li>仓库里有与解析、脱敏相关的测试代码，<strong>不作为本人已经完成的单测验收</strong>。提示词注入的人工页面验收尚未做。没有评测集，没有准确率数字。</li>
+  </ul>
+</section>
+
+<section id="ops">
+  <h2>部署、可观测、排障原则</h2>
+  <p>预发布环境由本人完成应用注册、网关授权、智能体创建和部署。部门内可以走通：查询主机、手动执行、运维与只读两套权限、计划分析、执行总结、追问。</p>
+  <p>请求带追踪头，便于在监控里按一次点击反查调用链。服务提供健康与接入自检，用来核对「平台注入的环境变量名」和「框架实际读取的名字」是否一致。接入可观测时出现过：指南里的占位符被原样写进配置、注入变量前缀与框架读取前缀不一致、服务名为空导致上报无处归属。处理方式是在健康接口打出 enabled、采样、上报地址是否存在等布尔与长度信息（不在对外材料里写内部参数），再逐项改配置直到监控里能看到这条应用。</p>
+  <p>作业链路里，接口能调通不等于能代表当前登录用户下发。需要在线请求携带登录态，并且该用户对目标业务具备作业访问权限。从线程上下文里「碰巧还有用户」在预发布上会丢身份。脚本生成留在后端，也是为了让这条身份链路只有一条。</p>
+  <p>智能体接入时，文档示例的调用方式和现网成功响应的字段布局需要当场核对。成功时顶层状态字段可能是固定成功文案，分析正文在别的字段里。如果把状态字段当成正文，页面会只显示一个成功字样。处理方式是按现网真实结构取正文，并在测试代码里覆盖「不要把成功态当成回答」（该测试不作为本人已完成验收的声明）。</p>
+  <table>
+    <tr><th>情况</th><th>系统行为</th><th>当前验证</th></tr>
+    <tr><td>权限服务异常</td><td>写与执行拒绝</td><td>按此实现；无权限账号未试</td></tr>
+    <tr><td>作业超时 / 部分失败</td><td>超时态；分主机、分项等级</td><td>手动执行主路径已走</td></tr>
+    <tr><td>智能体失败或超时</td><td>明确错误，不编造</td><td>三个入口在预发布可用</td></tr>
+    <tr><td>定时触发</td><td>调度代码已实现</td><td>预发布运行证据待确认</td></tr>
+  </table>
+</section>
+
+<section id="next">
+  <h2>若继续开发</h2>
+  <ul>
+    <li>固定一批脱敏样本：必须出现的计划/执行/主机标识、必须拒绝的越权请求、必须说明证据不足的情况。</li>
+    <li>产品埋点：打开分析的次数、证据不足占比、看完分析后是否回到原执行、是否随后重跑。</li>
+    <li>在预发布执行历史里确认「定时」记录之后，再对外宣称调度闭环。</li>
+    <li>主机级细粒度授权、结果通知、巡检成功率业务看板未作为本次主交付。</li>
+  </ul>
+  <p>没有生产用户规模、没有用户访谈、没有评分、没有人效对比、没有评测准确率。AI 始终只读，处置由人确认。</p>
+</section>
+</main>
+<footer>吴宇欣 · AI 应用开发作品集 · 打开本 HTML 即可阅读</footer>
+</body>
+</html>
